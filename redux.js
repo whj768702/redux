@@ -1,4 +1,10 @@
+// let initState = {
+//   count: 0,
+// };
 function counterReducer(state, action) {
+  if (!state) {
+    state = initState;
+  }
   switch (action.type) {
     case 'INCREMENT': {
       return {
@@ -61,9 +67,11 @@ const reducer = combineReducers({
 const createStore = function (reducer, initState) {
   let state = initState;
   let listeners = [];
+
   function subscribe(listener) {
     listeners.push(listener);
   }
+
   function dispatch(action) {
     state = reducer(state, action);
     for (let i = 0; i < listeners.length; i++) {
@@ -74,6 +82,8 @@ const createStore = function (reducer, initState) {
   function getState() {
     return state;
   }
+
+  dispatch({ type: Symbol });
 
   return {
     subscribe,
@@ -92,15 +102,17 @@ let initState = {
   },
 };
 
-let store = createStore(reducer, initState);
-store.subscribe(() => {
-  let state = store.getState();
-  console.log(state.counter.count, state.info.name, state.info.description);
-});
-store.dispatch({
-  type: 'INCREMENT',
-});
-store.dispatch({
-  type: 'SET_NAME',
-  name: '我是修改后的描述',
-});
+// let store = createStore(reducer, initState);
+let store = createStore(reducer);
+console.log('123: ', store.getState());
+// store.subscribe(() => {
+//   let state = store.getState();
+//   console.log(state.counter.count, state.info.name, state.info.description);
+// });
+// store.dispatch({
+//   type: 'INCREMENT',
+// });
+// store.dispatch({
+//   type: 'SET_NAME',
+//   name: '我是修改后的描述',
+// });
