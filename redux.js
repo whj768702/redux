@@ -104,7 +104,29 @@ let initState = {
 
 // let store = createStore(reducer, initState);
 let store = createStore(reducer);
-console.log('123: ', store.getState());
+const next = store.dispatch;
+
+const loggerMiddleware = (state) => (next) => (action) => {
+  console.log('this state: ', store.getState());
+  console.log('action: ', action);
+  next(action);
+  console.log('next state: ', store.getState());
+};
+
+const exceptionMiddleware = (state) => (next) => (action) => {
+  try {
+    // loggerMiddleware(action);
+    next(action);
+  } catch (err) {
+    console.log('错误报告: ', err);
+  }
+};
+const logger = loggerMiddleware(store);
+const exception = exceptionMiddleware(store);
+store.dispatch = exception(logger(next));
+store.dispatch({
+  type: 'INCREMENT',
+});
 // store.subscribe(() => {
 //   let state = store.getState();
 //   console.log(state.counter.count, state.info.name, state.info.description);
