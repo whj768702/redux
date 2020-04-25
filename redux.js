@@ -64,7 +64,11 @@ const reducer = combineReducers({
   info: InfoReducer,
 });
 
-const createStore = function (reducer, initState) {
+const createStore = function (reducer, initState, rewriteCreateStoreFunc) {
+  if (rewriteCreateStoreFunc) {
+    const newCreateStore = rewriteCreateStoreFunc(createStore);
+    return newCreateStore(reducer, initState);
+  }
   let state = initState;
   let listeners = [];
 
@@ -103,9 +107,6 @@ let initState = {
 };
 
 // let store = createStore(reducer, initState);
-let store = createStore(reducer);
-const next = store.dispatch;
-
 const loggerMiddleware = (state) => (next) => (action) => {
   console.log('this state: ', store.getState());
   console.log('action: ', action);
@@ -121,9 +122,29 @@ const exceptionMiddleware = (state) => (next) => (action) => {
     console.log('错误报告: ', err);
   }
 };
-const logger = loggerMiddleware(store);
-const exception = exceptionMiddleware(store);
-store.dispatch = exception(logger(next));
+
+const applyMiddleware = function (...middlewares) {
+  return function rewriteCreateStoreFunc(oldCreateStore) {
+    return function newCreateStore(reducer, initState) {
+      const store = oldCreateStore(reducer, initState);
+
+      const chain = middlewares.map((middleware) => middleware(store));
+      let dispatch = store.dispatch;
+      chain.reverse().map((middleware) => {
+        dispatch = middleware(dispatch);
+      });
+
+      store.dispatch = dispatch;
+      return store;
+    };
+  };
+};
+
+const rewriteCreateStoreFunc = applyMiddleware(
+  exceptionMiddleware,
+  loggerMiddleware
+);
+let store = createStore(reducer, initState, rewriteCreateStoreFunc);
 store.dispatch({
   type: 'INCREMENT',
 });
