@@ -74,6 +74,10 @@ const createStore = function (reducer, initState, rewriteCreateStoreFunc) {
 
   function subscribe(listener) {
     listeners.push(listener);
+    return function unscribe() {
+      const index = listeners.indexOf(listener);
+      listeners.splice(index, 1);
+    };
   }
 
   function dispatch(action) {
@@ -83,6 +87,7 @@ const createStore = function (reducer, initState, rewriteCreateStoreFunc) {
       listener();
     }
   }
+
   function getState() {
     return state;
   }
@@ -94,16 +99,6 @@ const createStore = function (reducer, initState, rewriteCreateStoreFunc) {
     dispatch,
     getState,
   };
-};
-
-let initState = {
-  counter: {
-    count: 0,
-  },
-  info: {
-    name: '测试',
-    description: '我是测试的描述',
-  },
 };
 
 // let store = createStore(reducer, initState);
@@ -128,7 +123,9 @@ const applyMiddleware = function (...middlewares) {
     return function newCreateStore(reducer, initState) {
       const store = oldCreateStore(reducer, initState);
 
-      const chain = middlewares.map((middleware) => middleware(store));
+      // const chain = middlewares.map((middleware) => middleware(store));
+      const simpleState = { getState: store.getState };
+      const chain = middlewares.map((middleware) => middleware(simpleState));
       let dispatch = store.dispatch;
       chain.reverse().map((middleware) => {
         dispatch = middleware(dispatch);
@@ -144,10 +141,32 @@ const rewriteCreateStoreFunc = applyMiddleware(
   exceptionMiddleware,
   loggerMiddleware
 );
+
+let initState = {
+  counter: {
+    count: 0,
+  },
+  info: {
+    name: '测试',
+    description: '我是测试的描述',
+  },
+};
+
 let store = createStore(reducer, initState, rewriteCreateStoreFunc);
+
+const unsubcribe = store.subscribe(() => {
+  let state = store.getState();
+  console.log('subcribe: ', state.counter.count);
+});
+
 store.dispatch({
   type: 'INCREMENT',
 });
+unsubcribe();
+store.dispatch({
+  type: 'INCREMENT',
+});
+
 // store.subscribe(() => {
 //   let state = store.getState();
 //   console.log(state.counter.count, state.info.name, state.info.description);
