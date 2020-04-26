@@ -65,6 +65,10 @@ const reducer = combineReducers({
 });
 
 const createStore = function (reducer, initState, rewriteCreateStoreFunc) {
+  if (typeof initState === 'function') {
+    rewriteCreateStoreFunc = initState;
+    initState = undefined;
+  }
   if (rewriteCreateStoreFunc) {
     const newCreateStore = rewriteCreateStoreFunc(createStore);
     return newCreateStore(reducer, initState);
@@ -94,10 +98,16 @@ const createStore = function (reducer, initState, rewriteCreateStoreFunc) {
 
   dispatch({ type: Symbol });
 
+  function replaceReducer(nextReducer) {
+    reducer = nextReducer;
+    dispatch({ type: Symbol() });
+  }
+
   return {
     subscribe,
     dispatch,
     getState,
+    replaceReducer,
   };
 };
 
@@ -153,6 +163,13 @@ let initState = {
 };
 
 let store = createStore(reducer, initState, rewriteCreateStoreFunc);
+
+const nextReducer = combineReducers({
+  counter: counterReducer,
+  info: InfoReducer,
+});
+
+store.replaceReducer(nextReducer);
 
 const unsubcribe = store.subscribe(() => {
   let state = store.getState();
