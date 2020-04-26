@@ -111,6 +111,33 @@ const createStore = function (reducer, initState, rewriteCreateStoreFunc) {
   };
 };
 
+function bindActionCreator(actionCreator, dispatch) {
+  return function () {
+    return dispatch(actionCreator.apply(this, arguments));
+  };
+}
+
+function bindActionCreators(actionCreators, dispatch) {
+  if (typeof actionCreator === 'function') {
+    return bindActionCreator(actionCreators, dispatch);
+  }
+
+  if (typeof actionCreators !== 'object' || actionCreators === null) {
+    throw new Error();
+  }
+
+  const keys = Object.keys(actionCreators);
+  const bindActionCreators = {};
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const actionCreator = actionCreators[key];
+    if (typeof actionCreator === 'function') {
+      bindActionCreators[key] = bindActionCreator(actionCreator, dispatch);
+    }
+  }
+  return bindActionCreators;
+}
+
 // let store = createStore(reducer, initState);
 const loggerMiddleware = (state) => (next) => (action) => {
   console.log('this state: ', store.getState());
